@@ -1,32 +1,35 @@
-## sort_nat 
 
-# hierfür gibt es bereits eine R-Funktion $mixedsort()$ aus dem Paket gtools.
-# Diese sortiert die Dateinamen nach 
-# Zahlen. Anders als sort() sortiert sie z.B. Bild1, Bild2, Bild10 anstatt
-# Bild1, Bild10, Bild2.
 
-# gtools::mixedsort -> sort_nat: Natürliche Anordnung
+#' Rename R function which sorts character strings containing
+#' embedded numbers so that the numbers are numerically sorted 
+#' rather than sorted by character value e.g. pic1, pic2, pic10
+#' instead of pic1, pic10, pic2
+#' @param .....
+
 library(gtools)
-sort_nat <- mixedsort # Umbenennung der R-Funktion
+sort_nat <- mixedsort 
 
 
-## LoadFeatureMaps
+#' LoadFeatureMaps
+#' @param vidwidth Stimulus width in pixels
+#' @param vidheight stimulus height in pixels
+#' @param path_all path to the folder containing folders from static and dynamic saliency maps
 
 library(mvtnorm)
 
-LoadFeatureMaps <- function(vidwidth,vidheight, path_all){ 
+LoadFeatureMaps <- function(vidwidth, vidheight, path_all) { 
   
-  # Static Saliency sortiert
+  # static saliency sorted
   path_stat_sal <- paste(path_all, "static_saliency", sep = "/")
   list_stat_sal <- list.files(path = path_stat_sal)
   sorted_static_saliency_maps <- sort_nat(list_stat_sal)
   
-  # Dynamic Saliency sortiert
+  # dynamic saliency sorted
   path_dyn_sal <- paste(path_all, "dynamic_saliency", sep = "/")
   list_dyn_sal <- list.files(path = path_dyn_sal)
   sorted_dynamic_saliency_maps <- sort_nat(list_dyn_sal)
   
-  # Center Bias-Map
+  # center bias map
   mu <- c(vidwidth / 2, vidheight / 2)
   wy <- vidheight / 12 
   wx <- vidwidth / 12
@@ -41,7 +44,7 @@ LoadFeatureMaps <- function(vidwidth,vidheight, path_all){
  
   center_bias_map <- F. / sum(F.)
   
-  # Uniform distribution map
+  # uniform distribution map
   uniform_map <- matrix(1, vidheight, vidwidth) / (vidheight * vidwidth)
   
   
@@ -55,28 +58,42 @@ LoadFeatureMaps <- function(vidwidth,vidheight, path_all){
 
 
 
-# ReadCurrentMaps
+#' ReadCurrentMaps
+#' @param vidheight stimulus height in pixels
+#' @param vidwidth stimulus width in pixels
+#' @param vidheight_monitor stimulus height on monitor in pixels
+#' @param vidwidth_monitor stimulus width on monitor in pixels
+#' @param Nmap number feature maps in model
+#' @param iframe frame number
+#' @param StatSal static saliency map as PNG file
+#' @param DynSal dynamic saliency map as PNG file
+#' @param AOI_dyn dynamic AoI matrix
+#' @param AOI_stat static AoI matrix
+#' @param center_bias_map center bias matrix
+#' @param uniform_map uniform matrix
+#' @param EyePos_example_Treat list with gaze coordinates treatment group
+#' @param EyePos_example_Kont list with gaze coordinates treatment control group
+
 
 library(ks)
 
 ReadCurrentMaps <- function(vidheight, vidwidth, vidheight_monitor,
                             vidwidth_monitor, Nmap, iframe, StatSal, DynSal,
                             AOI_dyn, AOI_stat,
-                            center_bias_map, uniform_map, EyePos_exemple_MENSA,
-                            EyePos_exemple_Kont){
+                            center_bias_map, uniform_map, EyePos_example_Treat,
+                            EyePos_example_Kont) {
   
   X <- matrix(nrow = vidheight * vidwidth * 2, ncol = Nmap + Nmap)
   G <- c(rep(1, vidheight * vidwidth), rep(0, vidheight * vidwidth))
   
-  # Normalisierung zu Probability Density Funktionen, welche spaltenweise
-  # in einer Matrix X angeordnet werden:
+  # Normalization to probability density functions, which are organized columnwise in a matrix X:
   X[, 1] <- rep((as.vector(StatSal) / sum(StatSal)), 2)
   X[, 2] <- rep((as.vector(DynSal) / sum(DynSal)), 2)
   X[, 3] <- rep((as.vector(center_bias_map) / sum(center_bias_map)), 2)
   X[, 4] <- rep((as.vector(uniform_map) / sum(uniform_map)), 2)
   X[, 5] <- rep(as.vector(AOI_dyn) / sum(AOI_dyn), 2)
   X[, 6] <- rep(as.vector(AOI_stat) / sum(AOI_stat), 2)
-  # Interaktionen:
+  # Interactions:
   X[, 7] <- X[, 1] * G
   X[, 8] <- X[, 2] * G
   X[, 9] <- X[, 3] * G
@@ -85,15 +102,15 @@ ReadCurrentMaps <- function(vidheight, vidwidth, vidheight_monitor,
   X[, 12] <- X[, 6] * G
   
   
-  # Read current frame eye position density map (Extraktion des aktuellen Fotos)
+  # Read current frame eye position density map (extract current frame):
   
   
-  # EyePos_exemple$EyePos_exemple[,,19] so kommt man an 19. Person.
-  # EyePos_exemple$EyePos_exemple[,2,] so kommt man an 2. Frame
+  # EyePos_example$EyePos_example[,, 19] 19th participant
+  # EyePos_example$EyePos_example[, 2,] 2nd frame
   
-  EyePos_i1 <- t(EyePos_exemple_MENSA[, iframe,])
-  EyePos_i2 <- t(EyePos_exemple_Kont[, iframe,])
-  # Ausreißer entfernen: 
+  EyePos_i1 <- t(EyePos_example_Treat[, iframe,])
+  EyePos_i2 <- t(EyePos_example_Kont[, iframe,])
+  # remove outliers: 
   EyePos_i1[which(EyePos_i1[, 1] > vidwidth_monitor), 1] <- NA
   EyePos_i1[which(EyePos_i1[, 2] > vidheight_monitor), 2] <- NA
   EyePos_i1[which(EyePos_i1[, 1] < 0), 1] <- NA 
@@ -104,25 +121,19 @@ ReadCurrentMaps <- function(vidheight, vidwidth, vidheight_monitor,
   EyePos_i2[which(EyePos_i2[, 1] < 0), 1] <- NA 
   EyePos_i2[which(EyePos_i2[, 2] < 0), 2] <- NA
   
-  # Löschen der Koordinate (0,0):
+  # Delete coordinate (0,0):
   EyePos_i1[which(EyePos_i1[, 1] == -258 & EyePos_i1[, 2] == 0), ] <- NA
-  
   EyePos_i2[which(EyePos_i2[, 1] == -258 & EyePos_i2[, 2] == 0), ] <- NA
   
   
-  # ist die x- oder y-Koordinate = NA, so lösche die gesamte Koordinate:
-
+  # if x or y coordinate is NA, delete whole eye position:
   EyePos_i1 <- EyePos_i1[!is.na(EyePos_i1[, 1]), ] 
   EyePos_i1 <- EyePos_i1[!is.na(EyePos_i1[, 2]), ]
   
   EyePos_i2 <- EyePos_i2[!is.na(EyePos_i2[, 1]), ] 
   EyePos_i2 <- EyePos_i2[!is.na(EyePos_i2[, 2]), ]
   
- 
-  
-  
   rotate_back <- function(x) apply(t(x), 2, rev)
-  
   
   EyePos_it1 <- EyePos_i1
   EyePos_it1[, 2] <- abs(EyePos_i1[, 2] - vidheight_monitor)
@@ -153,10 +164,24 @@ library('glmnet')
 library('png') # readPNG()
 library('HDeconometrics') # ic.glmnet()
 
-### Final_Lasso
+#' Final_Lasso
+#' @param EyePos_example_Treat gaze coordinates treatments as 3 dimensional list
+#' @param EyePos_example_Kont gaze coordinates controls as 3 dimensional list
+#' @param vidheight stimulus height in pixels
+#' @param vidwidth stimulus width in pixels
+#' @param vidheight_monitor stimulus height on monitor in pixels
+#' @param vidwidth_monitor stimulus width on monitor in pixels
+#' @param Nmap number feature maps in model
+#' @param nframes number frames
+#' @param path_all path to the folder containing folders from static and dynamic saliency maps
+#' @param listname_AOI_dym name of list with dynamic saliency maps
+#' @param listname_AOI_stat name of static saliency map
+#' @param least_square if TRUE, calculates additionally least square model and returns comparative metric D
+#' @return List of beta coefficients from ic.glmnet for each frame, coefficients of determination, 
+#'        lambda from the regularization, if desired comparative metric D
+#' @export
 
-
-Final_Lasso <- function(EyePos_exemple_MENSA, EyePos_exemple_Kont, vidheight, 
+Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Kont, vidheight, 
                         vidwidth, vidheight_monitor, vidwidth_monitor, Nmap,
                         nframes, path_all,
                         listname_AOI_dyn, 
@@ -205,7 +230,7 @@ Final_Lasso <- function(EyePos_exemple_MENSA, EyePos_exemple_Kont, vidheight,
                                vidwidth_monitor, Nmap, iframe, StatSal,
                                DynSal, AOI_dyn, AOI_stat, 
                                center_bias_map, uniform_map, 
-                               EyePos_exemple_MENSA, EyePos_exemple_Kont)
+                               EyePos_example_Treat, EyePos_example_Kont)
     
     Feature_Maps <- RCM_res$X
     Eye_Position_Map1 <- RCM_res$Eye_Position_Map1
