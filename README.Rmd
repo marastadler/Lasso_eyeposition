@@ -1,3 +1,12 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 indices of matched individuals 
 ```{r}
@@ -5,60 +14,58 @@ ind_MENSA <- c(1, 4, 13, 15, 16, 18, 20, 21, 23, 26)
 ind_Kont <- c(10, 16, 23, 31, 35, 37, 38, 41, 42, 47, 48, 49, 50, 51, 52, 60,
               61, 65, 68, 81, 83, 91, 95, 96, 97)
 ```
-
+source function to process raw eye tracking data
 ```{r}
 source('Transform_data.R')
 ```
 
-```{r warning=F}
-EyePos_exemple_M_v18 <- Transform_data(path = 'Hochbegabte-Critical-Stimuli-Export/Vid18_car_cornfield.csv')
-str(EyePos_exemple_M_v18)
-EyePos_exemple_M_v18_Matched <- EyePos_exemple_M_v18[, , ind_MENSA]
-str(EyePos_exemple_M_v18_Matched)
-```
-
-```{r warning=F}
-EyePos_exemple_K_v18 <- Transform_data(path = 'Kontrollgruppe-Critical-Stimuli-Export_190725_tw/Kontrollgruppe-N102_Raw-Data_Video-18_Car-Cornfield_excel.csv')
-str(EyePos_exemple_K_v18)
-EyePos_exemple_K_v18_Matched <- EyePos_exemple_K_v18[, , ind_Kont]
-str(EyePos_exemple_K_v18_Matched)
-```
-
-## Gruppenvergleich für car cornfield:
-
-Laden des Mehrgruppenmodells:
 ```{r}
-source('Funktionen_Modelling_Mehrgruppenmodell.R')
+EyePos_example_M_v18 <- Transform_data(path = 'Data/Vid18_car_cornfield_treatments.csv')
+str(EyePos_example_M_v18)
+EyePos_example_M_v18_Matched <- EyePos_exemple_M_v18[, , ind_MENSA]
+str(EyePos_example_M_v18_Matched)
 ```
-Einlesen der AOIs:
+
+```{r}
+EyePos_example_K_v18 <- Transform_data(path = 'Data/Vid18_car_cornfield_controls.csv')
+str(EyePos_example_K_v18)
+EyePos_example_K_v18_Matched <- EyePos_example_K_v18[, , ind_Kont]
+str(EyePos_example_K_v18_Matched)
+```
+
+## group comparison 
+
+load multi-group model
+```{r}
+source('R/modeling_multigroup.R')
+```
+load AoIs
 ```{r }
-load('Visual_Features_vid18/car.corn_dynamic_AOI.Rdata') 
-# List_AOI_car.cornfield_dyn
-load('Visual_Features_vid18/car.corn_static_AOI.Rdata') 
-# AOI_car.cornfield_stat
+load('Data/car.corn_dynamic_AOI.Rdata') 
+load('Data/car.corn_static_AOI.Rdata') 
 ```
-Ausführung des Gruppenmodells:
+model
 ```{r }
 Lasso_Group_vid18 <- 
-  Final_Lasso(EyePos_exemple_MENSA = EyePos_exemple_M_v18_Matched, 
-            EyePos_exemple_Kont = EyePos_exemple_K_v18_Matched,
+  Final_Lasso(EyePos_example_MENSA = EyePos_example_M_v18_Matched, 
+            EyePos_example_Kont = EyePos_example_K_v18_Matched,
             vidheight = 576, vidwidth = 720,
             vidheight_monitor = 1080, vidwidth_monitor = 1350, Nmap = 6, 
-            nframes = 149, path_all = "./Visual_Features_vid18",
+            nframes = 149, path_all = "./Data....",
             listname_AOI_dyn = List_AOI_car.cornfield_dyn, 
             listname_AOI_stat = AOI_car.cornfield_stat, least_square = TRUE)
 ```
-Graphische Veranschaulichung der Bestimmtheitsmaße $R^2$:
+Graphical illustration of the coefficients of determination $R^2$
 ```{r }
 plot(Lasso_Group_vid18$r2_adj)
 ```
-Graphische Veranschaulichung der Vergleichsmetrik $D$:
+Graphical illustration of the comparison metric $D$
 ```{r eval = F}
 plot(Lasso_Group_vid18$vergleich)
 min(Lasso_Group_vid18$vergleich)
 max(Lasso_Group_vid18$vergleich)
 ```
-Graphische Veranschaulichung der Feature-Map-Gewichtungen:
+Graphische Veranschaulichung der Feature-Map-Gewichtungen
 ```{r }
 beta <- Lasso_Group_vid18$beta
 
@@ -110,8 +117,8 @@ plot_ly(x = ~1:nrow(beta_norm), y = ~beta_norm[, 1], name = 'Static',
             color = I("brown"), mode = 'lines') %>%
   layout(
    # title = "Regressionskoeffizienten (car.cornfield, Frame 2-169)",
-      xaxis = list(title = "Framenummer"),
-      yaxis = list(title = "Geschätzte FM-Gewichtungen")
+      xaxis = list(title = "Frame number"),
+      yaxis = list(title = "Estimated RI")
     ) %>%
   layout(legend = list(orientation = 'h'))
 ```
