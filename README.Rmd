@@ -16,13 +16,13 @@ ind_Kont <- c(10, 16, 23, 31, 35, 37, 38, 41, 42, 47, 48, 49, 50, 51, 52, 60,
 ```
 source function to process raw eye tracking data
 ```{r}
-source('Transform_data.R')
+source('R/Transform_data.R')
 ```
 
 ```{r}
 EyePos_example_M_v18 <- Transform_data(path = 'Data/Vid18_car_cornfield_treatments.csv')
 str(EyePos_example_M_v18)
-EyePos_example_M_v18_Matched <- EyePos_exemple_M_v18[, , ind_Treat]
+EyePos_example_M_v18_Matched <- EyePos_example_M_v18[, , ind_Treat]
 str(EyePos_example_M_v18_Matched)
 ```
 
@@ -48,10 +48,10 @@ model
 ```{r }
 Lasso_Group_vid18 <- 
   Final_Lasso(EyePos_example_Treat = EyePos_example_M_v18_Matched, 
-            EyePos_example_Kont = EyePos_example_K_v18_Matched,
+            EyePos_example_Cont = EyePos_example_K_v18_Matched,
             vidheight = 576, vidwidth = 720,
             vidheight_monitor = 1080, vidwidth_monitor = 1350, Nmap = 6, 
-            nframes = 149, path_all = "./Data....",
+            nframes = 149, path_all = "./Data",
             listname_AOI_dyn = List_AOI_car.cornfield_dyn, 
             listname_AOI_stat = AOI_car.cornfield_stat, least_square = TRUE)
 ```
@@ -61,11 +61,11 @@ plot(Lasso_Group_vid18$r2_adj)
 ```
 Graphical illustration of the comparison metric $D$
 ```{r eval = F}
-plot(Lasso_Group_vid18$vergleich)
-min(Lasso_Group_vid18$vergleich)
-max(Lasso_Group_vid18$vergleich)
+plot(Lasso_Group_vid18$comparison)
+min(Lasso_Group_vid18$comparison)
+max(Lasso_Group_vid18$comparison)
 ```
-Graphische Veranschaulichung der Feature-Map-Gewichtungen
+Graphical illustration of the feature map weights
 ```{r }
 beta <- Lasso_Group_vid18$beta
 
@@ -116,7 +116,7 @@ plot_ly(x = ~1:nrow(beta_norm), y = ~beta_norm[, 1], name = 'Static',
   add_trace(y = ~beta_norm[, 12], name = 'AOI2 Control', opacity = .4, 
             color = I("brown"), mode = 'lines') %>%
   layout(
-   # title = "Regressionskoeffizienten (car.cornfield, Frame 2-169)",
+   # title = "Relative importance curves (car.cornfield, Frame 2-169)",
       xaxis = list(title = "Frame number"),
       yaxis = list(title = "Estimated RI")
     ) %>%
