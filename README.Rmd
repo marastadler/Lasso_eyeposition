@@ -44,7 +44,7 @@ load AoIs
 load('Data/car.corn_dynamic_AOI.Rdata') 
 load('Data/car.corn_static_AOI.Rdata') 
 ```
-model for the first 30 frames 
+model for the first 30 frames (the runtime is quite long)
 ```{r }
 Lasso_Group_vid18 <- 
   Final_Lasso(EyePos_example_Treat = EyePos_example_M_v18_Matched, 
