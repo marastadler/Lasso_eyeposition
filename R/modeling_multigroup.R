@@ -72,7 +72,7 @@ LoadFeatureMaps <- function(vidwidth, vidheight, path_all) {
 #' @param center_bias_map center bias matrix
 #' @param uniform_map uniform matrix
 #' @param EyePos_example_Treat list with gaze coordinates treatment group
-#' @param EyePos_example_Kont list with gaze coordinates treatment control group
+#' @param EyePos_example_Cont list with gaze coordinates treatment control group
 
 
 library(ks)
@@ -81,7 +81,7 @@ ReadCurrentMaps <- function(vidheight, vidwidth, vidheight_monitor,
                             vidwidth_monitor, Nmap, iframe, StatSal, DynSal,
                             AOI_dyn, AOI_stat,
                             center_bias_map, uniform_map, EyePos_example_Treat,
-                            EyePos_example_Kont) {
+                            EyePos_example_Cont) {
   
   X <- matrix(nrow = vidheight * vidwidth * 2, ncol = Nmap + Nmap)
   G <- c(rep(1, vidheight * vidwidth), rep(0, vidheight * vidwidth))
@@ -109,7 +109,7 @@ ReadCurrentMaps <- function(vidheight, vidwidth, vidheight_monitor,
   # EyePos_example$EyePos_example[, 2,] 2nd frame
   
   EyePos_i1 <- t(EyePos_example_Treat[, iframe,])
-  EyePos_i2 <- t(EyePos_example_Kont[, iframe,])
+  EyePos_i2 <- t(EyePos_example_Cont[, iframe,])
   # remove outliers: 
   EyePos_i1[which(EyePos_i1[, 1] > vidwidth_monitor), 1] <- NA
   EyePos_i1[which(EyePos_i1[, 2] > vidheight_monitor), 2] <- NA
@@ -166,7 +166,7 @@ library('HDeconometrics') # ic.glmnet()
 
 #' Final_Lasso
 #' @param EyePos_example_Treat gaze coordinates treatments as 3 dimensional list
-#' @param EyePos_example_Kont gaze coordinates controls as 3 dimensional list
+#' @param EyePos_example_Cont gaze coordinates controls as 3 dimensional list
 #' @param vidheight stimulus height in pixels
 #' @param vidwidth stimulus width in pixels
 #' @param vidheight_monitor stimulus height on monitor in pixels
@@ -181,7 +181,7 @@ library('HDeconometrics') # ic.glmnet()
 #'        lambda from the regularization, if desired comparative metric D
 #' @export
 
-Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Kont, vidheight, 
+Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight, 
                         vidwidth, vidheight_monitor, vidwidth_monitor, Nmap,
                         nframes, path_all,
                         listname_AOI_dyn, 
@@ -194,7 +194,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Kont, vidheight,
   center_bias_map <- LFM_res$center_bias_map
   uniform_map <- LFM_res$uniform_map
   
-  # Leere Matrix für Feature-Maps:
+  # Empty matrix for feature Maps:
   chosen_beta_weights <- matrix(nrow = nframes, ncol = Nmap + Nmap)
   
   
@@ -215,8 +215,6 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Kont, vidheight,
   
   for(iframe in 1:nframes){
     
-    
-    ## imread (Matlab) -> readPNG * 255, da andere Farbskala (R)
     StatSal <- readPNG(paste(path_stat_sal, list_stat_sal[iframe],
                                            sep = "/")) * 255
     DynSal <- readPNG(paste(path_Dyn_sal, list_Dyn_sal[iframe],
@@ -230,7 +228,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Kont, vidheight,
                                vidwidth_monitor, Nmap, iframe, StatSal,
                                DynSal, AOI_dyn, AOI_stat, 
                                center_bias_map, uniform_map, 
-                               EyePos_example_Treat, EyePos_example_Kont)
+                               EyePos_example_Treat, EyePos_example_Cont)
     
     Feature_Maps <- RCM_res$X
     Eye_Position_Map1 <- RCM_res$Eye_Position_Map1
@@ -272,10 +270,9 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Kont, vidheight,
     
     y_predicted <- predict(lasso, s = lasso$lambda, newx = Feature_Maps)
     
-    
     y <- c(as.vector(Eye_Position_Map1), as.vector(Eye_Position_Map2))
     
-    # Bestimmung des R-Quadrat
+    # coefficient of determination
     sst <- sum((y - mean(y))^2)
     sse <- sum((y_predicted - y)^2)
     n <- length(y)
@@ -286,8 +283,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Kont, vidheight,
     
     chosen_beta_weights[iframe, ] <- lasso$coefficients[-1]
     
-    
-    # Vergleich:
+     # comparison
     if(least_square){
       kq <- lm(c(as.vector(Eye_Position_Map1), 
                  as.vector(Eye_Position_Map2)) ~ Feature_Maps)$coefficients
