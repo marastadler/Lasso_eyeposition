@@ -185,7 +185,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
                         vidwidth, vidheight_monitor, vidwidth_monitor, Nmap,
                         nframes, path_all,
                         listname_AOI_dyn, 
-                        listname_AOI_stat, least_square = TRUE){
+                        listname_AOI_stat, least_square = TRUE) {
   
   
   LFM_res <- LoadFeatureMaps(vidwidth, vidheight, path_all)
@@ -194,7 +194,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
   center_bias_map <- LFM_res$center_bias_map
   uniform_map <- LFM_res$uniform_map
   
-  # Empty matrix for feature Maps:
+  # Empty matrix for feature map weights:
   chosen_beta_weights <- matrix(nrow = nframes, ncol = Nmap + Nmap)
   
   
@@ -209,7 +209,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
   
   rsq <- c()
   rsq_adj <- c()
-  vgl <- c()
+  comp <- c()
   lambda <- c()
   
   
@@ -288,9 +288,8 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
       kq <- lm(c(as.vector(Eye_Position_Map1), 
                  as.vector(Eye_Position_Map2)) ~ Feature_Maps)$coefficients
       
-      # Vergleich:
       
-      vgl[iframe] <- sum(abs(lasso$coefficients[-1])) / sum(abs(kq[-1]),
+      comp[iframe] <- sum(abs(lasso$coefficients[-1])) / sum(abs(kq[-1]),
                                                             na.rm = T)
       
     }
@@ -300,7 +299,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
   if(least_square){
     
     return(list(beta = chosen_beta_weights, r2_adj = rsq_adj, lambda = lambda,
-                vergleich = vgl))
+                comparison = comp))
 
   }
 
