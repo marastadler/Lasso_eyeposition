@@ -44,26 +44,20 @@ load AoIs
 load('Data/car.corn_dynamic_AOI.Rdata') 
 load('Data/car.corn_static_AOI.Rdata') 
 ```
-model
+model for the first 30 frames 
 ```{r }
 Lasso_Group_vid18 <- 
   Final_Lasso(EyePos_example_Treat = EyePos_example_M_v18_Matched, 
             EyePos_example_Cont = EyePos_example_K_v18_Matched,
             vidheight = 576, vidwidth = 720,
             vidheight_monitor = 1080, vidwidth_monitor = 1350, Nmap = 6, 
-            nframes = 149, path_all = "./Data",
+            nframes = 30, path_all = "./Data",
             listname_AOI_dyn = List_AOI_car.cornfield_dyn, 
-            listname_AOI_stat = AOI_car.cornfield_stat, least_square = TRUE)
+            listname_AOI_stat = AOI_car.cornfield_stat, least_square = FALSE)
 ```
 Graphical illustration of the coefficients of determination $R^2$
 ```{r }
 plot(Lasso_Group_vid18$r2_adj)
-```
-Graphical illustration of the comparison metric $D$
-```{r eval = F}
-plot(Lasso_Group_vid18$comparison)
-min(Lasso_Group_vid18$comparison)
-max(Lasso_Group_vid18$comparison)
 ```
 Graphical illustration of the feature map weights
 ```{r }
