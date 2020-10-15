@@ -19,15 +19,17 @@ source function to process raw eye tracking data
 source('R/Transform_data.R')
 ```
 
+### Stimulus car cornfield
+
 ```{r}
-EyePos_example_M_v18 <- Transform_data(path = 'Data/Vid18_car_cornfield_treatments.csv')
+EyePos_example_M_v18 <- Transform_data(path = 'Data_vid18/Vid18_car_cornfield_treatments.csv')
 str(EyePos_example_M_v18)
 EyePos_example_M_v18_Matched <- EyePos_example_M_v18[, , ind_Treat]
 str(EyePos_example_M_v18_Matched)
 ```
 
 ```{r}
-EyePos_example_K_v18 <- Transform_data(path = 'Data/Vid18_car_cornfield_controls.csv')
+EyePos_example_K_v18 <- Transform_data(path = 'Data_vid18/Vid18_car_cornfield_controls.csv')
 str(EyePos_example_K_v18)
 EyePos_example_K_v18_Matched <- EyePos_example_K_v18[, , ind_Kont]
 str(EyePos_example_K_v18_Matched)
@@ -45,24 +47,28 @@ load('Data/car.corn_dynamic_AOI.Rdata')
 load('Data/car.corn_static_AOI.Rdata') 
 ```
 model for the first 30 frames (the runtime is quite long)
-```{r }
+```{r cache = TRUE}
 Lasso_Group_vid18 <- 
   Final_Lasso(EyePos_example_Treat = EyePos_example_M_v18_Matched, 
             EyePos_example_Cont = EyePos_example_K_v18_Matched,
             vidheight = 576, vidwidth = 720,
             vidheight_monitor = 1080, vidwidth_monitor = 1350, Nmap = 6, 
-            nframes = 30, path_all = "./Data",
+            nframes = 70, path_all = "./Data_vid18",
             listname_AOI_dyn = List_AOI_car.cornfield_dyn, 
-            listname_AOI_stat = AOI_car.cornfield_stat, least_square = FALSE)
+            listname_AOI_stat = AOI_car.cornfield_stat, least_squares = TRUE,
+            lasso = TRUE, Permutation = FALSE)
 ```
+
+
+
 Graphical illustration of the coefficients of determination $R^2$
 ```{r }
 plot(Lasso_Group_vid18$r2_adj)
 ```
 Graphical illustration of the feature map weights
-```{r }
-beta <- Lasso_Group_vid18$beta
-
+```{r eval=F}
+beta <- Lasso_Group_vid18$betakq
+beta[is.na(beta)] <- 0
 
 beta_norm <- matrix(nrow = nrow(beta), ncol = ncol(beta))
 beta_norm[, 1] <- beta[, 1] 
@@ -97,22 +103,350 @@ plot_ly(x = ~1:nrow(beta_norm), y = ~beta_norm[, 1], name = 'Static',
             mode = 'lines') %>%
   add_trace(y = ~beta_norm[, 6], name = 'AOI2 Treat', color = I("brown"), 
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 7], name = 'Static Control', opacity = .4,
+  add_trace(y = ~beta_norm[, 7], name = 'Static Control', 
+            line = list(widthh=0.5, dash="dot"),
             color = I("blue"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 8], name = 'Dynamic Control', opacity = .4,
+  add_trace(y = ~beta_norm[, 8], name = 'Dynamic Control', 
+            line = list(widthh=0.5, dash="dot"),
             color = I("orange"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 9], name = 'Center Bias Control', opacity = .4,
+  add_trace(y = ~beta_norm[, 9], name = 'Center Bias Control',
+            line = list(widthh=0.5, dash="dot"),
             color = I("darkgreen"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 10], name = 'Uniform Control', opacity = .4,
+  add_trace(y = ~beta_norm[, 10], name = 'Uniform Control', 
+            line = list(widthh=0.5, dash="dot"),
             color = I("red"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 11], name = 'AOI1 Control', opacity = .4, 
+  add_trace(y = ~beta_norm[, 11], name = 'AOI1 Control', 
+            line = list(widthh=0.5, dash="dot"),
             color = I("purple"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 12], name = 'AOI2 Control', opacity = .4, 
+  add_trace(y = ~beta_norm[, 12], name = 'AOI2 Control', 
+            line = list(widthh=0.5, dash="dot"),
             color = I("brown"), mode = 'lines') %>%
   layout(
    # title = "Relative importance curves (car.cornfield, Frame 2-169)",
       xaxis = list(title = "Frame number"),
-      yaxis = list(title = "Estimated RI")
+      yaxis = list(title = "Feature map weight")
     ) %>%
   layout(legend = list(orientation = 'h'))
+```
+LASSO vs. KQ
+
+
+$Y_j  =  \beta_U  {M}_{Uj} + \beta_{CB}  M_{CBj} + \beta_{S}  M_{Sj} + \beta_D M_{Dj} + \beta_{AOI1}M_{AOI1j} + \beta_{AOI2} M_{AOI2j} +   \beta_{U,G}  (M_{Uj} \cdot M_{Gj}) + \beta_{CB,G} (M_{CBj}\cdot M_{Gj}) + \beta_{S,G}  (M_{Sj}  \cdot M_{Gj}) +$
+$\beta_{D,G} (M_{Dj} \cdot M_{Gj}) +\beta_{AOI1,G} (M_{AOI1j} \cdot M_{Gj}) +  \beta_{AOI2,G} (M_{AOI2j} \cdot M_{Gj}) + \epsilon_j$
+```{r}
+Names <- c("Static", "Dynamic", "CB", "Unif", "AOI Dyn", "AOI Stat",
+           "Static Group", "Dynamic Group", "CB Group", "Unif Group", 
+           "AOI Dyn Group", "AOI Stat Group")
+beta_kq <- Lasso_Group_vid18$betakq
+beta <- Lasso_Group_vid18$beta
+{par(mfrow = c(2, 2))
+for(i in 1:ncol(beta)){
+  
+  plot(beta[,i], type = "l", col = "blue", main = Names[i])
+  points(beta_kq[,i], type = "l", col = "green")
+  if(i == 1){
+  legend("topleft", legend = c("lasso", "ls"), lwd = 1, col = c("blue", "green"))}
+}
+}
+```
+
+Permutation test
+
+```{r}
+# random assignment of persons to groups of size 10 (treatment) and 25 (control)
+library(abind)
+# combine data:
+EyePos_komb <- abind(EyePos_example_M_v18_Matched, EyePos_example_K_v18_Matched, 
+                     along = 3)
+str(EyePos_komb)
+```
+
+```{r}
+set.seed(123)
+Permutation_vid18 <- list()
+for(i in 1:1000){
+  index_Treat <- sample(1:dim(EyePos_komb)[3], 
+                        size = dim(EyePos_example_M_v18_Matched)[3])
+  
+  Random_Treat <- EyePos_komb[,,index_Treat]
+  Random_Cont <- EyePos_komb[,,-index_Treat]
+  
+  
+  
+  
+  
+   fit.ls <- Final_Lasso(EyePos_example_Treat = Random_Treat, 
+                                         EyePos_example_Cont = Random_Cont,
+                                         vidheight = 576, 
+                                         vidwidth = 720,
+                                         vidheight_monitor = 1080, 
+                                         vidwidth_monitor = 1350, 
+                                         Nmap = 6, 
+                                         nframes = 70, 
+                                         path_all = "./Data_vid18",
+                                         listname_AOI_dyn = List_AOI_car.cornfield_dyn, 
+                                         listname_AOI_stat = AOI_car.cornfield_stat,
+                                         least_square = TRUE,
+                                         lasso = FALSE, 
+                                         Permutation = TRUE)
+   
+   Permutation_vid18[[i]] <- fit.ls
+}
+```
+
+```{r}
+nframes=70
+
+chosen_frames <- round(seq(7, nframes, len = 10))
+beta_observed <- Lasso_Group_vid18$betakq[chosen_frames, 7:12]
+
+
+
+str(Permutation_vid18)
+featmap <- c("Static", "Dynamic", "CB", "Uniform", "AoI1", "AoI2")
+
+beta.df <- matrix(nrow = 1000 * 6 * 10, ncol = 5)
+colnames(beta.df) <- c("Frame", "Replication", "Featuremap", "beta_estimated", 
+                       "beta_observed")
+
+row <- 0
+
+for(frame in 1:10){
+
+  for(i in 1:1000){
+    
+    for(fm in 7:12){
+      row <- row + 1
+      beta.df[row, ] <- c(paste("Frame", chosen_frames[frame]), 
+                          i, featmap[fm - 6], 
+                          Permutation_vid18[[i]]$betakq[frame, fm],
+                          beta_observed[frame, fm - 6])
+    }
+  }
+  
+}
+
+beta.df <- as.data.frame(beta.df)
+
+beta.df$Featuremap <- as.character(factor(beta.df$Featuremap, level = unique(beta.df$Featuremap)))
+
+p <- ggplot(data = beta.df, aes(x = Featuremap, y = as.numeric(beta_estimated), 
+                                fill = Featuremap)) + 
+             geom_boxplot(aes(fill=Featuremap)) + 
+  theme(axis.text.x = element_blank(), axis.ticks = element_blank()) +
+  geom_point(mapping = aes(x = Featuremap, y = as.numeric(beta_observed)),
+            color = 'red', pch = 3)
+
+p + facet_wrap( ~ factor(Frame, levels = unique(beta.df$Frame)), #scales = "free", 
+                ncol = 5, nrow = 2)  +
+  xlab("Feature Map") + ylab("Estimated group difference coefficient") + guides(fill=guide_legend(title = "Feature Map"))
+
+
+
+
+
+boxplot(beta.df[Frame == frame])
+```
+
+
+
+
+
+### Stimulus walking market
+
+
+
+```{r}
+EyePos_example_M_v26 <- Transform_data(path = 'Data_vid26/Vid26_walking_market_treatment.csv')
+str(EyePos_example_M_v26)
+EyePos_example_M_v26_Matched <- EyePos_example_M_v26[, , ind_Treat]
+str(EyePos_example_M_v26_Matched)
+```
+
+```{r}
+EyePos_example_K_v26 <- Transform_data(path = 'Data_vid26/Vid26_walking_market_control.csv')
+str(EyePos_example_K_v26)
+EyePos_example_K_v26_Matched <- EyePos_example_K_v26[, , ind_Kont]
+str(EyePos_example_K_v26_Matched)
+```
+
+## group comparison 
+
+load AoIs
+```{r }
+load('Data_vid26/walking.market_dynamic_AOI.Rdata') 
+load('Data_vid26/walking.market_static_AOI.Rdata') 
+```
+model for the first 30 frames (the runtime is quite long)
+```{r cache = TRUE}
+Lasso_Group_vid26 <- 
+  Final_Lasso(EyePos_example_Treat = EyePos_example_M_v26_Matched, 
+            EyePos_example_Cont = EyePos_example_K_v26_Matched,
+            vidheight = 576, vidwidth = 720,
+            vidheight_monitor = 1080, vidwidth_monitor = 1350, Nmap = 6, 
+            nframes = 70, path_all = "./Data_vid26",
+            listname_AOI_dyn = List_AOI_walking.market_dyn, 
+            listname_AOI_stat = AOI_walking.market_stat, 
+            least_squares = TRUE,
+            lasso = FALSE, Permutation = FALSE)
+```
+
+Graphical illustration of the feature map weights
+```{r eval=F}
+beta <- Lasso_Group_vid26$betakq
+beta[is.na(beta)] <- 0
+
+beta_norm <- matrix(nrow = nrow(beta), ncol = ncol(beta))
+beta_norm[, 1] <- beta[, 1] 
+beta_norm[, 2] <- beta[, 2]
+beta_norm[, 3] <- beta[, 3]
+beta_norm[, 4] <- beta[, 4]
+beta_norm[, 5] <- beta[, 5]
+beta_norm[, 6] <- beta[, 6]
+
+beta_norm[, 7] <- beta[, 7] + beta[, 1]
+beta_norm[, 8] <- beta[, 8] + beta[, 2]
+beta_norm[, 9] <- beta[, 9] + beta[, 3]
+beta_norm[, 10] <- beta[, 10] + beta[, 4]
+beta_norm[, 11] <- beta[, 11] + beta[, 5]
+beta_norm[, 12] <- beta[, 12] + beta[, 6]
+
+require('plotly')
+
+plot_ly(x = ~1:nrow(beta_norm), y = ~beta_norm[, 1], name = 'Static', 
+        mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 1], name = 'Static Treat', color = I("blue"),
+            mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 2], name = 'Dynamic Treat', color = I("orange"), 
+            mode = 'lines'
+            ) %>%
+  add_trace(y = ~beta_norm[, 3], name = 'Center Bias Treat', 
+            color = I("darkgreen"),
+            mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 4], name = 'Uniform Treat', color = I("red"), 
+            mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 5], name = 'AOI1 Treat', color = I("purple"),
+            mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 6], name = 'AOI2 Treat', color = I("brown"), 
+            mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 7], name = 'Static Control', 
+            line = list(widthh=0.5, dash="dot"),
+            color = I("blue"), mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 8], name = 'Dynamic Control', 
+            line = list(widthh=0.5, dash="dot"),
+            color = I("orange"), mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 9], name = 'Center Bias Control',
+            line = list(widthh=0.5, dash="dot"),
+            color = I("darkgreen"), mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 10], name = 'Uniform Control', 
+            line = list(widthh=0.5, dash="dot"),
+            color = I("red"), mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 11], name = 'AOI1 Control', 
+            line = list(widthh=0.5, dash="dot"),
+            color = I("purple"), mode = 'lines') %>%
+  add_trace(y = ~beta_norm[, 12], name = 'AOI2 Control', 
+            line = list(widthh=0.5, dash="dot"),
+            color = I("brown"), mode = 'lines') %>%
+  layout(
+   # title = "Relative importance curves (car.cornfield, Frame 2-169)",
+      xaxis = list(title = "Frame number"),
+      yaxis = list(title = "Feature map weight")
+    ) %>%
+  layout(legend = list(orientation = 'h'))
+```
+
+
+
+
+Permutation test
+
+```{r}
+# random assignment of persons to groups of size 10 (treatment) and 25 (control)
+library(abind)
+# combine data:
+EyePos_komb <- abind(EyePos_example_M_v26_Matched, EyePos_example_K_v26_Matched, 
+                     along = 3)
+str(EyePos_komb)
+```
+
+```{r eval=FALSE}
+set.seed(123)
+Permutation_vid26 <- list()
+for(i in 1:1000){
+  index_Treat <- sample(1:dim(EyePos_komb)[3], 
+                        size = dim(EyePos_example_M_v26_Matched)[3])
+  
+  Random_Treat <- EyePos_komb[,,index_Treat]
+  Random_Cont <- EyePos_komb[,,-index_Treat]
+  
+  
+  
+  
+  
+   fit.ls <- Final_Lasso(EyePos_example_Treat = Random_Treat, 
+                                         EyePos_example_Cont = Random_Cont,
+                                         vidheight = 576, 
+                                         vidwidth = 720,
+                                         vidheight_monitor = 1080, 
+                                         vidwidth_monitor = 1350, 
+                                         Nmap = 6, 
+                                         nframes = 70, 
+                                         path_all = "./Data_vid26",
+                                         listname_AOI_dyn = List_AOI_walking.market_dyn, 
+                                         listname_AOI_stat = AOI_walking.market_stat,
+                                         least_squares = TRUE,
+                                         lasso = FALSE, 
+                                         Permutation = TRUE)
+   
+   Permutation_vid26[[i]] <- fit.ls
+}
+```
+
+```{r}
+nframes=70
+
+chosen_frames <- round(seq(7, nframes, len = 10))
+beta_observed <- Lasso_Group_vid26$betakq[chosen_frames, 7:12]
+
+
+
+str(Permutation_vid26)
+featmap <- c("Static", "Dynamic", "CB", "Uniform", "AoI1", "AoI2")
+
+beta.df <- matrix(nrow = 1000 * 6 * 10, ncol = 5)
+colnames(beta.df) <- c("Frame", "Replication", "Featuremap", "beta_estimated", 
+                       "beta_observed")
+
+row <- 0
+
+for(frame in 1:10){
+
+  for(i in 1:1000){
+    
+    for(fm in 7:12){
+      row <- row + 1
+      beta.df[row, ] <- c(paste("Frame", chosen_frames[frame]), 
+                          i, featmap[fm - 6], 
+                          Permutation_vid26[[i]]$betakq[frame, fm],
+                          beta_observed[frame, fm - 6])
+    }
+  }
+  
+}
+
+beta.df <- as.data.frame(beta.df)
+
+beta.df$Featuremap <- as.character(factor(beta.df$Featuremap, level = unique(beta.df$Featuremap)))
+
+p <- ggplot(data = beta.df, aes(x = Featuremap, y = as.numeric(beta_estimated), 
+                                fill = Featuremap)) + 
+             geom_boxplot(aes(fill=Featuremap)) + 
+  theme(axis.text.x = element_blank(), axis.ticks = element_blank()) +
+  geom_point(mapping = aes(x = Featuremap, y = as.numeric(beta_observed)),
+            color = 'red', pch = 3)
+
+p + facet_wrap( ~ factor(Frame, levels = unique(beta.df$Frame)), #scales = "free", 
+                ncol = 5, nrow = 2)  +
+  xlab("Feature Map") + ylab("Estimated group difference coefficient") + guides(fill=guide_legend(title = "Feature Map"))
+
 ```
