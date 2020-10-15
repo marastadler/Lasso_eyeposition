@@ -1,5 +1,3 @@
-
-
 #' Rename R function which sorts character strings containing
 #' embedded numbers so that the numbers are numerically sorted 
 #' rather than sorted by character value e.g. pic1, pic2, pic10
@@ -11,7 +9,7 @@ sort_nat <- mixedsort
 
 
 #' LoadFeatureMaps
-#' @param vidwidth Stimulus width in pixels
+#' @param vidwidth stimulus width in pixels
 #' @param vidheight stimulus height in pixels
 #' @param path_all path to the folder containing folders from static and dynamic saliency maps
 
@@ -176,7 +174,9 @@ library('HDeconometrics') # ic.glmnet()
 #' @param path_all path to the folder containing folders from static and dynamic saliency maps
 #' @param listname_AOI_dym name of list with dynamic saliency maps
 #' @param listname_AOI_stat name of static saliency map
-#' @param least_square if TRUE, calculates additionally least square model and returns comparative metric D
+#' @param least_squares if TRUE, calculates least square model 
+#' @param lasso if TRUE, calculates lasso solution (if least_squares = TRUE and lasso = TRUE, calculates comparative metric D)
+#' @param Permutation if TRUE a permutation test for 10 frames is executed, if TRUE the function sets automatically least_squares = TRUE and lasso = FALSE
 #' @return List of beta coefficients from ic.glmnet for each frame, coefficients of determination, 
 #'        lambda from the regularization, if desired comparative metric D
 #' @export
@@ -185,7 +185,16 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
                         vidwidth, vidheight_monitor, vidwidth_monitor, Nmap,
                         nframes, path_all,
                         listname_AOI_dyn, 
-                        listname_AOI_stat, least_square = TRUE) {
+                        listname_AOI_stat, least_squares = TRUE,
+                        lasso = FALSE, Permutation = FALSE) {
+  
+  # either lasso or least squares or both
+  stopifnot(least_squares == T|lasso == T)
+  
+  # if Permutation == TRUE only compute least squares solution
+  if(Permutation){ 
+    lasso = FALSE
+    least_squares = TRUE}
   
   
   LFM_res <- LoadFeatureMaps(vidwidth, vidheight, path_all)
@@ -193,9 +202,6 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
   dynamic_saliency_maps <- LFM_res$sorted_dynamic_saliency_maps
   center_bias_map <- LFM_res$center_bias_map
   uniform_map <- LFM_res$uniform_map
-  
-  # Empty matrix for feature map weights:
-  chosen_beta_weights <- matrix(nrow = nframes, ncol = Nmap + Nmap)
   
   
   path_stat_sal <- paste(path_all, "static_saliency", sep = "/")
@@ -206,15 +212,34 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
   list_Dyn_sal <- list.files(path = path_Dyn_sal)
   list_Dyn_sal <- sort_nat(list_Dyn_sal)
   
-  
+  # empty vectors for R-squared solution, comparative metric D and selected
+  # penalty parameter lambda in the lasso by using BIC
   rsq <- c()
   rsq_adj <- c()
   comp <- c()
   lambda <- c()
   
+  if(Permutation){
+    # selecting a equidistant sequence of 10 frames (starting with frame number 7)
+    # for which permutation is conducted 
+    frames <- round(seq(7, nframes, len = 10))
+    # Empty matrix for feature map weights
+    beta_weights_kq <- matrix(nrow = length(frames), ncol = Nmap + Nmap)
+    pval_kq <- matrix(nrow = length(frames), ncol = Nmap + Nmap)
+  }
   
-  for(iframe in 1:nframes){
-    
+ else{
+      frames <- 1:nframes
+      # Empty matrix for feature map weights:
+      chosen_beta_weights <- matrix(nrow = nframes, ncol = Nmap + Nmap)
+      beta_weights_kq <- matrix(nrow = nframes, ncol = Nmap + Nmap)
+      pval_kq <- matrix(nrow = nframes, ncol = Nmap + Nmap)
+ }
+  
+  n_permut <- 0
+  # read and preprocess feature maps, run model for each frame
+  for(iframe in frames){
+    n_permut <- n_permut + 1
     StatSal <- readPNG(paste(path_stat_sal, list_stat_sal[iframe],
                                            sep = "/")) * 255
     DynSal <- readPNG(paste(path_Dyn_sal, list_Dyn_sal[iframe],
@@ -234,13 +259,18 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
     Eye_Position_Map1 <- RCM_res$Eye_Position_Map1
     Eye_Position_Map2 <- RCM_res$Eye_Position_Map2
     
+   
+    # if(!is.null(Feature_Maps[is.na(Feature_Maps)])||
+    #    !is.null(Eye_Position_Map[is.na(Eye_Position_Map1)])||
+    #    !is.null(Eye_Position_Map[is.na(Eye_Position_Map2)])){
+    #   if(lasso){
+    #   chosen_beta_weights[iframe, ] <- rep(NA, Nmap + Nmap)}
+    #   if(least_squares){
+    #     beta_weights_kq[iframe, ] <- rep(NA, Nmap + Nmap)
+    #   }
+    # }
     
-    if(!is.null(Feature_Maps[is.na(Feature_Maps)])||
-       !is.null(Eye_Position_Map[is.na(Eye_Position_Map1)])||
-       !is.null(Eye_Position_Map[is.na(Eye_Position_Map2)])){
-      chosen_beta_weights[iframe, ] <- rep(NA, Nmap + Nmap)
-    }
-    
+    # else{
     # LASSO 
     Eye_Position_Map1 <- scale(Eye_Position_Map1, center = TRUE, scale = FALSE)
     Eye_Position_Map2 <- scale(Eye_Position_Map2, center = TRUE, scale = FALSE)
@@ -260,6 +290,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
     
     Feature_Maps <- rbind(Feature_Maps1, Feature_Maps2)
     
+    if(lasso){
     lasso <- ic.glmnet(Feature_Maps, c(as.vector(Eye_Position_Map1), 
                                        as.vector(Eye_Position_Map2)), 
                                        crit = "bic", 
@@ -282,28 +313,47 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
     rsq_adj[iframe] <- 1 - (1 - rsq[iframe]) * (n - 1) / (n - p)
     
     chosen_beta_weights[iframe, ] <- lasso$coefficients[-1]
-    
+    }
      # comparison
-    if(least_square){
-      kq <- lm(c(as.vector(Eye_Position_Map1), 
-                 as.vector(Eye_Position_Map2)) ~ Feature_Maps)$coefficients
+    if(least_squares){
       
+      lmfit <- lm(c(as.vector(Eye_Position_Map1), 
+                    as.vector(Eye_Position_Map2)) ~ Feature_Maps)
+      kq <- lmfit$coefficients
+      colnames(beta_weights_kq) <- names(kq[-1])
+      colnames(pval_kq) <- names(kq[-1])
       
+      # fill weights into an empty matrix (columns: Feature maps, rows: Frame number) and keep NA estimates:
+      j <- 0
+      for(i in colnames(beta_weights_kq)){
+        j <- j + 1
+        beta_weights_kq[n_permut, j] <- lmfit$coefficients[i]
+        pval_kq[n_permut, j] <- summary(lmfit)$coefficients[,4][i]
+        
+      }
+     
+      if(least_squares & lasso)
       comp[iframe] <- sum(abs(lasso$coefficients[-1])) / sum(abs(kq[-1]),
-                                                            na.rm = T)
+                                                             na.rm = T)
       
     }
     
-  }
-  
-  if(least_square){
     
+    
+  # }
+  }
+  if(least_squares & lasso){
     return(list(beta = chosen_beta_weights, r2_adj = rsq_adj, lambda = lambda,
-                comparison = comp))
+                betakq = beta_weights_kq, pvaluekq = pval_kq#, D = comp
+                ))
+  }
+  if(least_squares & !lasso){
+    
+    return(list(betakq = beta_weights_kq, pvaluekq = pval_kq))
 
   }
 
-  if(!least_square){
+  if(lasso & !least_squares){
     
     return(list(beta = chosen_beta_weights, r2_adj = rsq_adj, lambda = lambda))
     
