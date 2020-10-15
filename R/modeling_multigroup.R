@@ -291,15 +291,15 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
     Feature_Maps <- rbind(Feature_Maps1, Feature_Maps2)
     
     if(lasso){
-    lasso <- ic.glmnet(Feature_Maps, c(as.vector(Eye_Position_Map1), 
+    fit.lasso <- ic.glmnet(Feature_Maps, c(as.vector(Eye_Position_Map1), 
                                        as.vector(Eye_Position_Map2)), 
                                        crit = "bic", 
                        intercept = F, standardize = F, standardize.response = T)
     
    
-    lambda[iframe] <- lasso$lambda
+    lambda[iframe] <- fit.lasso$lambda
     
-    y_predicted <- predict(lasso, s = lasso$lambda, newx = Feature_Maps)
+    y_predicted <- predict(fit.lasso, s = lasso$lambda, newx = Feature_Maps)
     
     y <- c(as.vector(Eye_Position_Map1), as.vector(Eye_Position_Map2))
     
@@ -333,7 +333,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
       }
      
       if(least_squares & lasso)
-      comp[iframe] <- sum(abs(lasso$coefficients[-1])) / sum(abs(kq[-1]),
+      comp[iframe] <- sum(abs(fit.lasso$coefficients[-1])) / sum(abs(kq[-1]),
                                                              na.rm = T)
       
     }
