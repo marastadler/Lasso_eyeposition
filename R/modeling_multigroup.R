@@ -299,7 +299,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
    
     lambda[iframe] <- fit.lasso$lambda
     
-    y_predicted <- predict(fit.lasso, s = lasso$lambda, newx = Feature_Maps)
+    y_predicted <- predict(fit.lasso, s = fit.lasso$lambda, newx = Feature_Maps)
     
     y <- c(as.vector(Eye_Position_Map1), as.vector(Eye_Position_Map2))
     
@@ -312,7 +312,7 @@ Final_Lasso <- function(EyePos_example_Treat, EyePos_example_Cont, vidheight,
     rsq[iframe] <- 1 - sse / sst
     rsq_adj[iframe] <- 1 - (1 - rsq[iframe]) * (n - 1) / (n - p)
     
-    chosen_beta_weights[iframe, ] <- lasso$coefficients[-1]
+    chosen_beta_weights[iframe, ] <- fit.lasso$coefficients[-1]
     }
      # comparison
     if(least_squares){
