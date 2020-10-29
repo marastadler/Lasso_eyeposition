@@ -43,8 +43,8 @@ source('R/modeling_multigroup.R')
 ```
 load AoIs
 ```{r }
-load('Data/car.corn_dynamic_AOI.Rdata') 
-load('Data/car.corn_static_AOI.Rdata') 
+load('Data_vid18/car.corn_dynamic_AOI.Rdata') 
+load('Data_vid18/car.corn_static_AOI.Rdata') 
 ```
 model for the first 30 frames (the runtime is quite long)
 ```{r cache = TRUE}
