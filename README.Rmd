@@ -89,40 +89,40 @@ require('plotly')
 
 plot_ly(x = ~1:nrow(beta_norm), y = ~beta_norm[, 1], name = 'Static', 
         mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 1], name = 'Static Treat', color = I("blue"),
+  add_trace(y = ~beta_norm[, 1], name = 'Static Control', color = I("blue"),
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 2], name = 'Dynamic Treat', color = I("orange"), 
+  add_trace(y = ~beta_norm[, 2], name = 'Dynamic Control', color = I("orange"), 
             mode = 'lines'
             ) %>%
-  add_trace(y = ~beta_norm[, 3], name = 'Center Bias Treat', 
+  add_trace(y = ~beta_norm[, 3], name = 'Center Bias Control', 
             color = I("darkgreen"),
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 4], name = 'Uniform Treat', color = I("red"), 
+  add_trace(y = ~beta_norm[, 4], name = 'Uniform Control', color = I("red"), 
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 5], name = 'AOI1 Treat', color = I("purple"),
+  add_trace(y = ~beta_norm[, 5], name = 'AOI1 Control', color = I("purple"),
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 6], name = 'AOI2 Treat', color = I("brown"), 
+  add_trace(y = ~beta_norm[, 6], name = 'AOI2 Control', color = I("brown"), 
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 7], name = 'Static Control', 
+  add_trace(y = ~beta_norm[, 7], name = 'Static Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("blue"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 8], name = 'Dynamic Control', 
+  add_trace(y = ~beta_norm[, 8], name = 'Dynamic Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("orange"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 9], name = 'Center Bias Control',
+  add_trace(y = ~beta_norm[, 9], name = 'Center Bias Treat',
             line = list(widthh=0.5, dash="dot"),
             color = I("darkgreen"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 10], name = 'Uniform Control', 
+  add_trace(y = ~beta_norm[, 10], name = 'Uniform Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("red"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 11], name = 'AOI1 Control', 
+  add_trace(y = ~beta_norm[, 11], name = 'AOI1 Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("purple"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 12], name = 'AOI2 Control', 
+  add_trace(y = ~beta_norm[, 12], name = 'AOI2 Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("brown"), mode = 'lines') %>%
   layout(
-   # title = "Relative importance curves (car.cornfield, Frame 2-169)",
+   # title = "Relative importance curves (car.cornfield, Frame 2-70)",
       xaxis = list(title = "Frame number"),
       yaxis = list(title = "Feature map weight")
     ) %>%
@@ -315,40 +315,40 @@ require('plotly')
 
 plot_ly(x = ~1:nrow(beta_norm), y = ~beta_norm[, 1], name = 'Static', 
         mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 1], name = 'Static Treat', color = I("blue"),
+  add_trace(y = ~beta_norm[, 1], name = 'Static Control', color = I("blue"),
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 2], name = 'Dynamic Treat', color = I("orange"), 
+  add_trace(y = ~beta_norm[, 2], name = 'Dynamic Control', color = I("orange"), 
             mode = 'lines'
             ) %>%
-  add_trace(y = ~beta_norm[, 3], name = 'Center Bias Treat', 
+  add_trace(y = ~beta_norm[, 3], name = 'Center Bias Control', 
             color = I("darkgreen"),
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 4], name = 'Uniform Treat', color = I("red"), 
+  add_trace(y = ~beta_norm[, 4], name = 'Uniform Control', color = I("red"), 
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 5], name = 'AOI1 Treat', color = I("purple"),
+  add_trace(y = ~beta_norm[, 5], name = 'AOI1 Control', color = I("purple"),
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 6], name = 'AOI2 Treat', color = I("brown"), 
+  add_trace(y = ~beta_norm[, 6], name = 'AOI2 Control', color = I("brown"), 
             mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 7], name = 'Static Control', 
+  add_trace(y = ~beta_norm[, 7], name = 'Static Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("blue"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 8], name = 'Dynamic Control', 
+  add_trace(y = ~beta_norm[, 8], name = 'Dynamic Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("orange"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 9], name = 'Center Bias Control',
+  add_trace(y = ~beta_norm[, 9], name = 'Center Bias Treat',
             line = list(widthh=0.5, dash="dot"),
             color = I("darkgreen"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 10], name = 'Uniform Control', 
+  add_trace(y = ~beta_norm[, 10], name = 'Uniform Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("red"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 11], name = 'AOI1 Control', 
+  add_trace(y = ~beta_norm[, 11], name = 'AOI1 Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("purple"), mode = 'lines') %>%
-  add_trace(y = ~beta_norm[, 12], name = 'AOI2 Control', 
+  add_trace(y = ~beta_norm[, 12], name = 'AOI2 Treat', 
             line = list(widthh=0.5, dash="dot"),
             color = I("brown"), mode = 'lines') %>%
   layout(
-   # title = "Relative importance curves (car.cornfield, Frame 2-169)",
+   # title = "Relative importance curves (car.cornfield, Frame 2-70)",
       xaxis = list(title = "Frame number"),
       yaxis = list(title = "Feature map weight")
     ) %>%
