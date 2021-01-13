@@ -46,7 +46,7 @@ load AoIs
 load('Data_vid18/car.corn_dynamic_AOI.Rdata') 
 load('Data_vid18/car.corn_static_AOI.Rdata') 
 ```
-model for the first 30 frames (the runtime is quite long)
+model for the first 70 frames (the runtime is quite long)
 ```{r cache = TRUE}
 Lasso_Group_vid18 <- 
   Final_Lasso(EyePos_example_Treat = EyePos_example_M_v18_Matched, 
@@ -277,7 +277,7 @@ load AoIs
 load('Data_vid26/walking.market_dynamic_AOI.Rdata') 
 load('Data_vid26/walking.market_static_AOI.Rdata') 
 ```
-model for the first 30 frames (the runtime is quite long)
+model for the first 70 frames (the runtime is quite long)
 ```{r cache = TRUE}
 Lasso_Group_vid26 <- 
   Final_Lasso(EyePos_example_Treat = EyePos_example_M_v26_Matched, 
